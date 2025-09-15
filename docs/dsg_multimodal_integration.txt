@@ -1,0 +1,8 @@
+## Processing dataset
+If you have a scrambled dataset as standalone txt files in one directory, e.g.
+```
+~/stirpot-toy/
+    Abc_River.txt
+    Efg_Pond.txt
+```
+You can generate a `jsonl` file with `FlashRAG/scripts/preproess_scrambled_texts.py` by specifying the `txt_path` variable to be `~/stirpot-toy/` and adjusting other settings (e.g. chunking) with the variables as desired.
