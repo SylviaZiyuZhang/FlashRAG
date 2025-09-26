@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 from flashrag.retriever.utils import load_model, pooling, parse_query, parse_image
 from flashrag.utils import get_device
+from openai import OpenAI
 
 
 class Encoder:
@@ -249,3 +250,62 @@ class ClipEncoder:
         else:
             raise NotImplementedError(f"Unsupported model type: {self.model_type}")
         return text_emb
+    
+class OpenAIEncoder:
+    """
+    OpenAIEncoder class for encoding queries and corpus using OpenAI Embedding API.
+
+    Attributes:
+        model_name (str): The OpenAI embedding model name (e.g., "text-embedding-3-small").
+        instruction (str): Additional instructions for parsing queries.
+        silent (bool): Whether to suppress progress bar.
+
+    Methods:
+        encode(query_list: List[str], batch_size=64, is_query=True) -> np.ndarray:
+            Encodes a list of queries into embeddings using the OpenAI API.
+    """
+
+    def __init__(self, model_name="text-embedding-3-small", instruction=None, silent=False):
+        self.model_name = model_name
+        self.instruction = instruction
+        self.silent = silent
+        self.client = OpenAI()
+
+        # Define embedding_dim based on the model
+        if "text-embedding-3-large" in model_name:
+            self.embedding_dim = 3072
+        elif "text-embedding-3-small" in model_name:
+            self.embedding_dim = 768 # dimension hardcoded for now
+        else:
+            # Default to 1536 for legacy ada-002
+            self.embedding_dim = 768
+
+    def single_batch_encode(self, query_list: Union[List[str], str], is_query=True) -> np.ndarray:
+        query_list = parse_query(self.model_name, query_list, self.instruction, is_query)
+
+        if not isinstance(query_list, list):
+            query_list = [query_list]
+
+        response = self.client.embeddings.create(
+            model=self.model_name,
+            input=query_list,
+            dimensions=768  # << force API to return 768-dim embeddings for now
+        )
+
+        # Extract embeddings
+        embeddings = [item.embedding for item in response.data]
+        query_emb = np.array(embeddings, dtype=np.float32, order="C")
+
+        return query_emb
+
+    def encode(self, query_list: List[str], batch_size=64, is_query=True) -> np.ndarray:
+        query_emb = []
+        for i in tqdm(range(0, len(query_list), batch_size), desc="Encoding process: ", disable=self.silent):
+            batch = query_list[i : i + batch_size]
+            query_emb.append(self.single_batch_encode(batch, is_query))
+        query_emb = np.concatenate(query_emb, axis=0)
+        return query_emb
+
+    def multi_gpu_encode(self, query_list: Union[List[str], str], batch_size=64, is_query=True) -> np.ndarray:
+        # OpenAI API is cloud-hosted, so no GPU parallelism is needed
+        return self.encode(query_list, batch_size, is_query)

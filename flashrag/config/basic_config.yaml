@@ -28,11 +28,11 @@ method2index:
 
 # ------------------------------------------------Environment Settings------------------------------------------------#
 # Directory paths for data and outputs
-data_dir: "dataset/"
+data_dir: "scratch/"
 save_dir: "output/"
 
 gpu_id: "0,1,2,3"
-dataset_name: "nq" # name of the dataset in data_dir
+dataset_name: "stirpot" # name of the dataset in data_dir
 split: ["test"] # dataset split to load (e.g. train,dev,test)
 
 # Sampling configurations for testing
@@ -50,13 +50,13 @@ save_note: "experiment"
 # If set the name, the model path will be find in global paths
 retrieval_method: "e5" # name or path of the retrieval model.
 retrieval_model_path: ~ # path to the retrieval model
-index_path: ~ # set automatically if not provided.
+index_path: scratch/indexes/openai_text-embedding-3-small_Flat.index # set automatically if not provided.
 multimodal_index_path_dict: ~ # use for multimodal retreiver, example format: {'text': 'path/to/text_index' or None, 'image': 'path/to/image_index' or None}
 faiss_gpu: False # whether use gpu to hold index
-corpus_path: ~ # path to corpus in '.jsonl' format that store the documents
+corpus_path: "scratch/stirpot_corpus.jsonl" # path to corpus in '.jsonl' format that store the documents
 
 instruction: ~ # instruction for the retrieval model
-retrieval_topk: 5 # number of retrieved documents
+retrieval_topk: 50 # number of retrieved documents
 retrieval_batch_size: 256 # batch size for retrieval
 retrieval_use_fp16: True # whether to use fp16 for retrieval model
 retrieval_query_max_length: 128 # max length of the query
@@ -66,6 +66,7 @@ retrieval_cache_path: ~ # path to the retrieval cache
 retrieval_pooling_method: ~ # set automatically if not provided
 bm25_backend: bm25s # pyserini, bm25s
 use_sentence_transformer: False
+use_openai_on_retrieval: True # whether to use openai model on retrieval
 silent_retrieval: True # whether to silent the retrieval process
 
 seismic_query_cut: 10 # parameters for seismic. See seismic paper for full details
@@ -98,8 +99,8 @@ multi_retriever_setting:
       retrieval_model_path: ~
 
 # -------------------------------------------------Generator Settings------------------------------------------------#
-framework: fschat # inference frame work of LLM, supporting: 'hf','vllm','fschat', 'openai'
-generator_model: "llama3-8B-instruct" # name or path of the generator model
+framework: openai # inference frame work of LLM, supporting: 'hf','vllm','fschat', 'openai'
+generator_model: "gpt-4o-mini" # name or path of the generator model
 # setting for openai model, only valid in openai framework
 openai_setting:
   api_key: ~

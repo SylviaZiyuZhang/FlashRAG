@@ -383,6 +383,7 @@ class DenseRetriever(BaseTextRetriever):
 
         self.retrieval_model_path = self._config["retrieval_model_path"]
         self.use_st = self._config["use_sentence_transformer"]
+        self.use_openai = self._config["use_openai_on_retrieval"]
         self.use_faiss_gpu = self._config["faiss_gpu"]
 
     def load_model(self):
@@ -456,6 +457,7 @@ class DenseRetriever(BaseTextRetriever):
         results = []
         scores = []
         emb = self.encoder.encode(query, batch_size=batch_size, is_query=True)
+        print(emb.shape)
         scores, idxs = self.index.search(emb, k=num)
         scores = scores.tolist()
         idxs = idxs.tolist()

@@ -2,6 +2,10 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+# For using API key from .env file.
+from dotenv import load_dotenv
+load_dotenv()
+
 import faiss
 import json
 import warnings
@@ -24,6 +28,13 @@ cores = str(multiprocessing.cpu_count())
 os.environ["RAYON_NUM_THREADS"] = cores
 
 
+"""
+retreval_method:
+    bm25, splade, dense, openai_text-embedding-3-small, clip
+
+model_path:
+    openai: openai_text-embedding-3-small
+"""
 class Index_Builder:
     r"""A tool class used to build an index used in retrieval."""
 
@@ -78,6 +89,7 @@ class Index_Builder:
 
         # judge if the retrieval model is clip
         self.is_clip = ("clip" in self.retrieval_method) or (self.model_path is not None and "clip" in self.model_path)
+        self.use_openai_api = self.retrieval_method.startswith("openai") or (self.model_path is not None and "openai" in self.model_path)
         if not self.is_clip:
             try:
                 with open(os.path.join(self.model_path, "config.json")) as f:
@@ -524,6 +536,15 @@ class Index_Builder:
                 model_path=self.model_path,
             )
             hidden_size = self.encoder.model.projection_dim
+        
+        elif self.use_openai_api:
+            from flashrag.retriever.encoder import OpenAIEncoder
+
+            self.encoder = OpenAIEncoder(
+                model_name=self.retrieval_method.split("_")[-1],
+                instruction=self.instruction,
+            )
+            hidden_size = self.encoder.embedding_dim
 
         elif self.use_sentence_transformer:
             from flashrag.retriever.encoder import STEncoder
